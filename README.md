@@ -3,7 +3,7 @@
 # Low-Res Video Player
 
 Low-Res Video Player was made for videos that have seen better days—grainy transfers, unofficial rips, or downloads the seedier ends of the web to name a few. Files that have been heavily-shared, re-encoded, compressed, and corrupted into an artifact-laced beauty—what Hito Steyerl calls a *“ghost of an image.”*  
-This viewer doesn’t upscale or clean up any of these traits; it celebrates them and provides a space for your videos to do what they do best.
+This viewer doesn’t upscale or clean up any of these traits; it celebrates them and provides a space for videos to do what they do best.
 
 A dropdown menu allows for playback at viewport hieghts ranging from 144px to 720px. Does this actually *do* anything? Not really. But it seems better to watch a blurry VHS rip on my laptop with an interface that embraces the form of its contents.
 
