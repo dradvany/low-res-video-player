@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LowRes Video Player</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            line-height: 1.4;
+            letter-spacing: .015rem;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: black;       
+            font-family: sans-serif;
+        }
+
+        body {
+            cursor: auto;
+            transition: cursor 0.3s ease-in-out;
+        }
+
+        .hide-cursor {
+            cursor: none;
+        }
+
+        .drop-zone {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+
+        .drop-zone.dragover {
+            border-color: #12131261;
+        }
+
+        .video-container {
+            position: relative;
+            display: none;
+            margin-bottom: 15px;
+        }
+
+        video {
+            border-radius: 0px;
+            height: 480px;
+            width: auto;
+        }
+
+        .ui-element {
+            position: fixed;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        button, select {
+            cursor: pointer;
+            opacity: .65;
+            width: 80px;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        select {
+            width: 88px;
+        }
+
+        button:hover, select:hover {
+            opacity: .85;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .toolbar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .left-controls {
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        #help-button{
+            width: 24px;
+        }
+
+        .file-info-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 220px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .file-info {
+            color: white;
+            opacity: .75;
+            font-size: 12px;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-align: center;
+            text-overflow: ellipsis;
+            display: block;
+        }
+
+        .resolution-buttons {
+            display: flex;
+            align-items: center;
+        }
+
+        .toolbar.hide-controls {
+            transform: translateY(100px);
+        }
+        
+        .left-controls.hide-controls {
+            transform: translateY(100px);
+        }
+        
+        .file-info-container.hide-controls {
+            transform: translate(-50%, 100px);
+        }
+
+        .video-player-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #upload-input {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="drop-zone" class="drop-zone">
+        <div class="video-player-wrapper" id="player-wrapper">
+            <div class="video-container" id="video-container">
+                <video id="video-player" controls></video>
+            </div>
+            
+            <!-- Left side controls -->
+            <div class="left-controls ui-element" id="left-controls">
+                <button id="help-button">?</button>
+                <button type="button" id="upload">upload</button>
+                <input type="file" id="upload-input" accept="video/*" />
+            </div>
+            
+            <!-- Center bottom file info -->
+            <div class="file-info-container ui-element" id="file-info-container">
+                <span id="file-info" class="file-info"></span>
+            </div>
+            
+            <!-- Right side -->
+            <div class="toolbar ui-element" id="toolbar">
+                <div class="resolution-buttons">
+                    <div class="dropdown">
+                        <label for="resolution"></label>
+                        <select id="resolution">
+                            <option value="144">144px</option>
+                            <option value="240">240px</option>
+                            <option value="360">360px</option>
+                            <option value="480" selected>480px</option>
+                            <option value="720">720px</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dropZone = document.getElementById('drop-zone');
+            const playerWrapper = document.getElementById('player-wrapper');
+            const videoContainer = document.getElementById('video-container');
+            const videoPlayer = document.getElementById('video-player');
+            const resolutionSelect = document.getElementById('resolution');
+            const uploadButton = document.getElementById('upload');
+            const uploadInput = document.getElementById('upload-input');
+            const helpButton = document.getElementById('help-button');
+            const fileInfo = document.getElementById('file-info');
+            const fileInfoContainer = document.getElementById('file-info-container');
+            const toolbar = document.getElementById('toolbar');
+            const leftControls = document.getElementById('left-controls');
+            const uiElements = [toolbar, leftControls, fileInfoContainer];
+
+            let uiTimeoutId = null;
+            let isVideoPlaying = false;
+
+            function hideUI() {
+                if (isVideoPlaying) {
+                    document.body.classList.add('hide-cursor');
+                    uiElements.forEach(element => {
+                        element.classList.add('hide-controls');
+                    });
+                }
+            }
+
+            function showUI() {
+                document.body.classList.remove('hide-cursor');
+                uiElements.forEach(element => {
+                    element.classList.remove('hide-controls');
+                });
+                resetUITimer();
+            }
+
+            function resetUITimer() {
+                if (uiTimeoutId) {
+                    clearTimeout(uiTimeoutId);
+                    uiTimeoutId = null;
+                }
+                if (isVideoPlaying) {
+                    uiTimeoutId = setTimeout(hideUI, 2000);
+                }
+            }
+
+            // Toggle play/pause
+            function togglePlayPause() {
+                if (videoPlayer.paused || videoPlayer.ended) {
+                    videoPlayer.play();
+                } else {
+                    videoPlayer.pause();
+                }
+            }
+
+            // Toggle mute
+            function toggleMute() {
+                videoPlayer.muted = !videoPlayer.muted;
+            }
+
+            // Seek video
+            function seekVideo(seconds) {
+                videoPlayer.currentTime += seconds;
+            }
+
+            // Change volume
+            function changeVolume(delta) {
+                videoPlayer.volume = Math.max(0, Math.min(1, videoPlayer.volume + delta));
+            }
+
+            // Jump to percentage
+            function jumpToPercentage(percent) {
+                videoPlayer.currentTime = videoPlayer.duration * (percent / 100);
+            }
+
+
+            // Keyboard event handler
+            function handleKeyDown(event) {
+                // Only process keyboard commands if video is loaded
+                if (!videoPlayer.src) return;
+                
+                showUI();
+                
+                // Prevent default behavior for these keys
+                const keysToPrevent = [' ', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'f', 'F', 'm', 'M'];
+                if (keysToPrevent.includes(event.key)) {
+                    event.preventDefault();
+                }
+                
+                switch (event.key) {
+                    case ' ':  // Spacebar
+                        togglePlayPause();
+                        break;
+                    case 'm':
+                    case 'M':
+                        toggleMute();
+                        break;
+                    case 'ArrowLeft':
+                        seekVideo(-10);  // Rewind 10 seconds
+                        break;
+                    case 'ArrowRight':
+                        seekVideo(10);   // Forward 10 seconds
+                        break;
+                    case 'ArrowUp':
+                        changeVolume(0.1);  // Volume up by 10%
+                        break;
+                    case 'ArrowDown':
+                        changeVolume(-0.1); // Volume down by 10%
+                        break;
+                    default:
+                        // Check for number keys 0-9
+                        if (!isNaN(parseInt(event.key)) && parseInt(event.key) >= 0 && parseInt(event.key) <= 9) {
+                            jumpToPercentage(parseInt(event.key) * 10);
+                        }
+                        break;
+                }
+            }
+
+            // Set up event listeners
+            document.addEventListener('keydown', handleKeyDown);
+
+            playerWrapper.addEventListener('mousemove', () => {
+                showUI();
+            });
+            
+            playerWrapper.addEventListener('mouseleave', () => {
+                if (isVideoPlaying) {
+                    hideUI();
+                }
+            });
+            
+            playerWrapper.addEventListener('mouseenter', () => {
+                showUI();
+            });
+
+            helpButton.addEventListener('click', () => {
+                clearTimeout(uiTimeoutId);
+                alert("This is a document for viewing locally stored videos\n\nInstructions\n1. Upload or Drop Your Video File\n2. Enter the Browser's Full Screen Mode");
+                resetUITimer();
+            });
+
+            resolutionSelect.addEventListener('change', () => {
+                const height = resolutionSelect.value;
+                videoPlayer.style.height = `${height}px`;
+                videoPlayer.style.width = 'auto';
+            });
+
+            uploadButton.addEventListener('click', () => {
+                uploadInput.click();
+            });
+
+            uploadInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file && file.type.startsWith('video/')) {
+                    const fileURL = URL.createObjectURL(file);
+                    videoPlayer.src = fileURL;
+                    videoContainer.style.display = 'block';
+                    fileInfo.textContent = file.name;
+                }
+            });
+
+            dropZone.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+
+            dropZone.addEventListener('drop', (event) => {
+                event.preventDefault();
+                dropZone.classList.remove('dragover');
+
+                const file = event.dataTransfer.files[0];
+                if (file && file.type.startsWith('video/')) {
+                    const fileURL = URL.createObjectURL(file);
+                    videoPlayer.src = fileURL;
+                    videoContainer.style.display = 'block';
+                    fileInfo.textContent = file.name;
+                }
+            });
+
+            videoPlayer.addEventListener('play', () => {
+                isVideoPlaying = true;
+                resetUITimer();
+            });
+
+            videoPlayer.addEventListener('pause', () => {
+                isVideoPlaying = false;
+                showUI();
+            });
+
+            videoPlayer.addEventListener('ended', () => {
+                isVideoPlaying = false;
+                showUI();
+            });
+
+            toolbar.addEventListener('mouseenter', () => {
+                clearTimeout(uiTimeoutId);
+            });
+
+            toolbar.addEventListener('mouseleave', () => {
+                resetUITimer();
+            });
+
+            leftControls.addEventListener('mouseenter', () => {
+                clearTimeout(uiTimeoutId);
+            });
+
+            leftControls.addEventListener('mouseleave', () => {
+                resetUITimer();
+            });
+        });
+    </script>
+</body>
+</html>
