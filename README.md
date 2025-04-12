@@ -10,7 +10,7 @@ A dropdown menu allows for playback at viewport hieghts ranging from 144px to 72
 ## Technical stuff
 
 - HTML & CSS handle layout and styling  
-- Vanilla JavaScript does the rest: media control, drag-and-drop, fullscreen, and keyboard shortcuts  
+- Vanilla JavaScript does the rest: media control, drag-and-drop, and keyboard shortcuts  
 - No libraries. No frameworks.
 
 ## How to use
