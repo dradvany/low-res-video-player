@@ -2,22 +2,21 @@
 
 # Low-Res Video Player
 
-Low-Res Video Player was made for media that has seen better days—grainy transfers, unofficial rips, or downloads the seedier ends of the web to name a few. Files that have been heavily-shared, re-encoded, compressed, and corrupted into an artifact-laced beauty—what Hito Steyerl calls a *“ghost of an image.”*  
-This viewer doesn’t upscale or clean up any of these traits; it celebrates them and provides a space for videos to do what they do best.
+Low-Res Video Player was made for artifact-laced media: re-encoded, unofficial rips, or heavily shared files. This viewer doesn’t upscale or clean up any of these traits--they are instead celebrated.
 
-A dropdown menu allows for playback at viewport hieghts ranging from 144px to 720px. Though this speculative viewer doesn't really *do* anything, it seems simpler to watch a blurry VHS rip on my desktop with an interface that embraces the form of its contents.
+A dropdown menu allows for playback at viewport heights ranging from 144px to 720px. This speculative viewer doesn't really *do* anything, though it seems simpler to watch a blurry VHS rip through an interface that embraces the form of its contents.
 
-## Technical stuff
+## Technical details
 
 - HTML & CSS handle layout and styling  
 - Vanilla JavaScript does the rest: media control, drag-and-drop, and keyboard shortcuts  
 - No libraries. No frameworks.
 
-## How to use
+## Instructions
 
 1. Download and open the HTML file in your browser (no internet required)  
 2. Drop or upload a video file  
-3. Enter your browser’s fullscreen mode  
+3. Enter browser’s fullscreen mode  
 
 ## License
 
